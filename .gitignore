@@ -1,0 +1,31 @@
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment files
+.env
+*.env
+
+# Databases and binaries
+*.db
+*.sqlite3
+*.npy
+*.npz
+*.csv
+*.json
+
+# Logs
+*.log
+
+# React build files and dependencies
+frontend/node_modules/
+frontend/.env
+frontend/build/
+frontend/dist/
+
+# System files
+.DS_Store
+Thumbs.db
