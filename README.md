@@ -18,7 +18,7 @@ Conversational Search: Go beyond keywords. Ask for things like, "I need a dress 
 * Full E-commerce UI: A complete, responsive storefront built with React to browse products, view details, and manage a cart.
 
 ### The AI Engine Explained:
-Our copilot is powered by advanced deep learning models, primarily leveraging the Google Gemini API. The AI operates on two parallel streams:
+Our copilot is powered by advanced deep learning models, primarily leveraging the Cohere API. The AI operates on two parallel streams:
 
 + Natural Language Processing (NLP): At its core, a powerful transformer-based model interprets complex, conversational text. It understands nuances, context, and intent, allowing for a natural dialogue between the user and the shopping assistant.
 
@@ -47,7 +47,7 @@ This project will be developed in distinct phases to ensure a structured and agi
 1. Phase 1: Foundation & Setup
 
 
-2. Phase 2: Frontend UI & Database
+2. Phase 2: Frontend UI & Web scraping
 
 
 3. Phase 3: AI Backend Development
