@@ -29,15 +29,15 @@ These two streams are fed into a hybrid recommendation engine that synthesizes t
 ### Technology & Architecture (Planned):
 This project is built on a modern, serverless, and scalable tech stack.
 
-* Frontend: React & Tailwind CSS
+* Frontend: React & Tailwind CSS & Axios/Fetch
 
-* Backend: Firebase Functions (Node.js)
+* Backend: FastAPI with Uvicorn server
 
-* Database: Firebase Firestore (NoSQL)
+* Database: None (real time scrapping)
 
-* AI Engine: Google Gemini API
+* AI Engine: Cohere API (command-r-plus-08-2024)
 
-* Deployment: Vercel (Frontend) & Firebase Hosting (Backend)
+* Deployment: Vercel (Frontend) & FastAPI hosting (Backend)
 
 * Version Control: Git & GitHub
 
