@@ -1,90 +1,53 @@
 import React, { useState } from "react";
-import "./App.css";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import ChatBox from "./ChatBox";
+import Login from "./Login";
 
 function App() {
-  const [messages, setMessages] = useState([]);
-  const [inputText, setInputText] = useState("");
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem("token") || null);
+  const [username, setUsername] = useState(localStorage.getItem("username") || null);
 
-  const sendMessage = async () => {
-    if (!inputText.trim() && !selectedImage) return;
-
-    const formData = new FormData();
-    formData.append("message", inputText);
-    if (selectedImage) formData.append("image", selectedImage);
-
-    const response = await fetch("http://127.0.0.1:8000/chat", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await response.json();
-
-    setMessages((prev) => [
-      ...prev,
-      { sender: "user", text: inputText, image: previewImage },
-      { sender: "bot", text: data.reply, products: data.products },
-    ]);
-
-    setInputText("");
-    setSelectedImage(null);
-    setPreviewImage(null);
+  const handleLogin = ({ token, username }) => {
+    localStorage.setItem("token", token);
+    localStorage.setItem("username", username);
+    setToken(token);
+    setUsername(username);
   };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    setSelectedImage(file);
-    setPreviewImage(URL.createObjectURL(file));
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    setToken(null);
+    setUsername(null);
   };
 
   return (
-    <div className="app-container">
-      <h2 className="header">🛍️ Shopping Copilot</h2>
+    <Container maxWidth="lg" sx={{ py: 3 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h4">🛍️ Shopping Copilot</Typography>
+        <Box>
+          {token ? (
+            <>
+              <Typography component="span" mr={2}>Welcome, {username}</Typography>
+              <Button variant="outlined" color="secondary" onClick={handleLogout}>Logout</Button>
+            </>
+          ) : null}
+        </Box>
+      </Box>
 
-      <div className="chat-box">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`message ${msg.sender === "user" ? "user" : "bot"}`}
-          >
-            {msg.image && <img src={msg.image} className="chat-image" alt="user input" />}
-            <p>{msg.text}</p>
+      {!token ? (
+        <Login onLogin={handleLogin} />
+      ) : (
+        <ChatBox token={token} username={username} />
+      )}
 
-            {msg.products && (
-              <div className="product-grid">
-                {msg.products.map((p, i) => (
-                  <div className="product-card" key={i}>
-                    <img src={p.image} alt={p.name} />
-                    <h4>{p.name}</h4>
-                    <p className="price">{p.price}</p>
-                    <a href={p.link} target="_blank" rel="noreferrer">
-                      <button className="view-btn">View</button>
-                    </a>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="input-area">
-        <input
-          type="text"
-          placeholder="Ask me about products, prices, or upload an image..."
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-        />
-
-        <label className="image-upload">
-          📷
-          <input type="file" accept="image/*" onChange={handleImageUpload} hidden />
-        </label>
-
-        <button onClick={sendMessage} className="send-btn">Send</button>
-      </div>
-    </div>
+      <Box mt={6} textAlign="center" color="text.secondary">
+        <Typography variant="caption">Built with ScraperAPI + Material UI · Local demo</Typography>
+      </Box>
+    </Container>
   );
 }
 

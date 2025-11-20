@@ -1,5 +1,12 @@
-# Python virtual environment
+# ===========================
+# PYTHON / FASTAPI BACKEND
+# ===========================
+
+# Virtual environment
 venv/
+.venv/
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
@@ -9,23 +16,56 @@ __pycache__/
 .env
 *.env
 
-# Databases and binaries
+# Local database
 *.db
 *.sqlite3
+
+# Uploaded images
+static/uploads/*
+
+# ML model weights (avoid committing huge files)
+*.pt
+*.pkl
+*.safetensors
+*.bin
+*.ckpt
+*.pth
+
+# Embeddings & numpy artifacts
 *.npy
 *.npz
-*.csv
-*.json
+
+# HuggingFace cache
+huggingface/
+~/.cache/huggingface/
+*.msgpack
+*.h5
 
 # Logs
 *.log
 
-# React build files and dependencies
+# ===========================
+# FRONTEND (REACT)
+# ===========================
+
 frontend/node_modules/
 frontend/.env
 frontend/build/
 frontend/dist/
 
-# System files
+# React debug files
+*.map
+
+# ===========================
+# SYSTEM / EDITOR FILES
+# ===========================
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+
+# ===========================
+# FIRESTORE / OLD DATA FOLDER
+# (Only keep if used; else ignore)
+# ===========================
+firestore/*

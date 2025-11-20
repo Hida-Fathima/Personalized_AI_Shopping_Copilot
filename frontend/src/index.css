@@ -1,17 +1,67 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* frontend/src/index.css */
+:root{
+  --bg:#f4f7fb;
+  --card:#ffffff;
+  --accent:#0f62fe;
+  --muted:#6b7280;
 }
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+body{
+  margin:0;
+  font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg, #eef2ff 0%, var(--bg) 100%);
+  color:#111827;
 }
+.app {
+  max-width:1100px;
+  margin:28px auto;
+  padding:18px;
+}
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:18px;
+}
+.brand{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.brand h1{margin:0;font-size:20px;color:var(--accent);}
+.controls{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.card{
+  background:var(--card);
+  border-radius:12px;
+  padding:16px;
+  box-shadow:0 6px 20px rgba(16,24,40,0.06);
+}
+.search-area{display:flex;gap:12px;align-items:center;}
+.search-area input[type="text"], .search-area input[type="number"]{
+  padding:10px 12px;border-radius:8px;border:1px solid #e6e7ee;width:320px;
+}
+.search-area button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;}
+.results-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:14px;margin-top:18px;
+}
+.product{
+  padding:12px;border-radius:10px;background:#fff;border:1px solid rgba(15, 98, 254, 0.04);
+}
+.product img{width:100%;height:160px;object-fit:contain;background:#fff;border-radius:6px;}
+.product .title{font-weight:600;margin-top:8px;font-size:14px}
+.product .price{color:var(--accent);font-weight:700;margin-top:6px}
+.product .meta{font-size:12px;color:var(--muted);margin-top:6px}
+.chatbox{margin-top:18px}
+.message{padding:10px 12px;border-radius:10px;max-width:80%;margin-bottom:8px}
+.message.me{background:linear-gradient(90deg,#eaf2ff,#e6f0ff);align-self:flex-end}
+.message.bot{background:#f3f4f6}
+.chat-threads{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.footer-actions{display:flex;gap:8px;align-items:center;margin-top:12px}
+.small{font-size:12px;color:var(--muted)}
+.center{display:flex;justify-content:center;align-items:center}
+.login-form{max-width:420px;margin:40px auto}
