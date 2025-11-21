@@ -133,6 +133,34 @@ for epoch in range(2):
 
     print("Epoch", epoch+1, "Loss:", epoch_loss/len(loader))
 
+from sklearn.metrics import roc_curve, auc
+import matplotlib.pyplot as plt
+
+train_losses = []
+train_accs = []
+all_train_labels = []
+all_train_scores = []
+
+# Re-run one pass over training data to collect metrics
+with torch.no_grad():
+    for enc, labels in loader:
+        enc = {k: v.to(device) for k, v in enc.items()}
+        labels = labels.to(device)
+
+        scores = model(enc).squeeze()
+        preds = (scores > 0.5).float()
+
+        # store
+        train_losses.append(criterion(scores, labels).item())
+        train_accs.append((preds == labels).float().mean().item())
+        all_train_labels.extend(labels.cpu().numpy())
+        all_train_scores.extend(scores.cpu().numpy())
+
+# ===== TRAIN ROC CURVE =====
+fpr_train, tpr_train, _ = roc_curve(all_train_labels, all_train_scores)
+auc_train = auc(fpr_train, tpr_train)
+
+
 # ===========================================================
 # 5. EVALUATION
 # ===========================================================
@@ -156,6 +184,11 @@ print(classification_report(y_true, y_pred))
 print("\n===== CONFUSION MATRIX =====")
 print(confusion_matrix(y_true, y_pred))
 
+# ===== TEST ROC CURVE =====
+fpr_test, tpr_test, _ = roc_curve(y_true, y_pred)
+auc_test = auc(fpr_test, tpr_test)
+
+
 # ===========================================================
 # 6. SAVE MODEL
 # ===========================================================
@@ -164,3 +197,144 @@ torch.save(model.state_dict(), "crossencoder_reranker.pt")
 joblib.dump(tokenizer, "crossencoder_tokenizer.pkl")
 
 print("\nModel saved successfully!")
+
+plt.figure(figsize=(15, 4))
+
+# ---------------- LOSS CURVE ----------------
+plt.subplot(1, 3, 1)
+plt.plot(train_losses, label="Train Loss")
+plt.title("Training Loss Curve")
+plt.xlabel("Batch")
+plt.ylabel("Loss")
+plt.legend()
+
+# ---------------- ACCURACY CURVE ----------------
+plt.subplot(1, 3, 2)
+plt.plot(train_accs, label="Train Accuracy")
+plt.title("Training Accuracy Curve")
+plt.xlabel("Batch")
+plt.ylabel("Accuracy")
+plt.legend()
+
+# ---------------- ROC CURVES ----------------
+plt.subplot(1, 3, 3)
+plt.plot(fpr_train, tpr_train, label=f"Train AUC = {auc_train:.3f}")
+plt.plot(fpr_test, tpr_test, label=f"Test AUC = {auc_test:.3f}")
+plt.title("ROC Curves")
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# -----------------------------
+# TRAIN METRICS COLLECTION
+# -----------------------------
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import roc_curve, auc
+
+train_losses = []
+train_accs = []
+train_true = []
+train_scores = []
+
+with torch.no_grad():
+    for enc, labels in loader:
+        enc = {k: v.to(device) for k, v in enc.items()}
+        labels = labels.to(device)
+
+        scores = model(enc).squeeze()
+        preds = (scores > 0.5).float()
+
+        train_losses.append(criterion(scores, labels).item())
+        train_accs.append((preds == labels).float().mean().item())
+        train_true.extend(labels.cpu().numpy())
+        train_scores.extend(scores.cpu().numpy())
+
+# TRAIN ROC-AUC
+fpr_train, tpr_train, _ = roc_curve(train_true, train_scores)
+auc_train = auc(fpr_train, tpr_train)
+
+# -----------------------------
+# TEST METRICS COLLECTION
+# -----------------------------
+test_losses = []
+test_accs = []
+test_scores = []
+
+with torch.no_grad():
+    for enc, labels in eval_loader:
+        enc = {k: v.to(device) for k, v in enc.items()}
+        labels = labels.to(device)
+
+        scores = model(enc).squeeze()
+        preds = (scores > 0.5).float()
+
+        test_losses.append(criterion(scores, labels).item())
+        test_accs.append((preds == labels).float().mean().item())
+        test_scores.extend(scores.cpu().numpy())
+
+# TEST ROC-AUC
+fpr_test, tpr_test, _ = roc_curve(y_true, test_scores)
+auc_test = auc(fpr_test, tpr_test)
+
+# ===== TRAINING LOSS CURVE =====
+plt.figure(figsize=(6,4))
+plt.plot(train_losses)
+plt.title("Training Loss Curve")
+plt.xlabel("Batch")
+plt.ylabel("Loss")
+plt.show()
+
+# ===== TRAINING ACCURACY CURVE =====
+plt.figure(figsize=(6,4))
+plt.plot(train_accs)
+plt.title("Training Accuracy Curve")
+plt.xlabel("Batch")
+plt.ylabel("Accuracy")
+plt.show()
+
+# ===== TRAINING ROC-AUC =====
+plt.figure(figsize=(6,4))
+plt.plot(fpr_train, tpr_train, label=f"AUC = {auc_train:.3f}")
+plt.title("Training ROC Curve")
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.legend()
+plt.show()
+
+# ===== TEST LOSS CURVE =====
+plt.figure(figsize=(6,4))
+plt.plot(test_losses)
+plt.title("Test Loss Curve")
+plt.xlabel("Batch")
+plt.ylabel("Loss")
+plt.show()
+
+# ===== TEST ACCURACY CURVE =====
+plt.figure(figsize=(6,4))
+plt.plot(test_accs)
+plt.title("Test Accuracy Curve")
+plt.xlabel("Batch")
+plt.ylabel("Accuracy")
+plt.show()
+
+# ===== TEST ROC-AUC =====
+plt.figure(figsize=(6,4))
+plt.plot(fpr_test, tpr_test, label=f"AUC = {auc_test:.3f}")
+plt.title("Test ROC Curve")
+plt.xlabel("FPR")
+plt.ylabel("TPR")
+plt.legend()
+plt.show()
+
+# ===== CONFUSION MATRIX HEATMAP (TEST) =====
+plt.figure(figsize=(5,4))
+sns.heatmap(confusion_matrix(y_true, y_pred), annot=True, fmt='d', cmap='Blues')
+plt.title("Confusion Matrix Heatmap (Test)")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
+
