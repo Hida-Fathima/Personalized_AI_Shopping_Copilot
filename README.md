@@ -1,59 +1,88 @@
 # Personalized AI Shopping Copilot
 
-A multimodal, conversational AI assistant for a truly personalized and intuitive shopping experience.
+**A Multimodal, RAG-based AI Assistant for Zero-Hallucination E-Commerce Discovery.**
 
+---
 ### Project Overview:
 
-The AI Shopping Copilot is designed to revolutionize the e-commerce journey by replacing rigid, keyword-based searches with a fluid, conversational, and intelligent shopping partner. The core innovation lies in its multimodal architecture, which allows the system to understand user intent from multiple forms of input—not just what they type, but also what they see. This project aims to build a full-fledged e-commerce application powered by a sophisticated AI engine. Users can interact with the copilot as they would with a human shopping assistant, asking complex questions, getting personalized recommendations, and even using images to find the products they desire.
+The **AI Shopping Copilot** is designed to solve the "Paradox of Choice" in online retail. Unlike standard chatbots that rely on static databases or "hallucinate" fake products, this system implements a **Real-Time Retrieval-Augmented Generation (RAG)** pipeline.
 
+It acts as an intelligent personal stylist that understands user intent through both **Natural Language** (Text) and **Computer Vision** (Images). By scraping live data from major platforms (Amazon/Flipkart) and rigorously filtering it through a semantic re-ranker, the Copilot ensures that every recommendation is 100% factually accurate, in-stock, and hyper-relevant to the user's specific "vibe."
+
+---
 ### Core Features:
-Conversational Search: Go beyond keywords. Ask for things like, "I need a dress for a summer wedding that's not too formal."
 
-* Visual Search (Search by Image): See something you like? Upload a photo, and our copilot will find visually similar items in the store. This is the heart of our multimodal capability.
+* **Conversational Search:** Go beyond keywords. Ask complex queries like, *"I need a floral dress for a summer beach wedding under ₹2000."*
+* **Visual Search (Multimodal):** Can't describe it? Upload a photo. Our integrated **BLIP Model** analyzes the image to find visually similar items available for purchase.
+* **Real-Time Grounding:** No stale data. The system fetches live pricing and stock status via **ScraperAPI**, ensuring you never see an "Out of Stock" recommendation.
+* **Semantic Re-Ranking:** A custom-trained **Cross-Encoder** filters out irrelevant "keyword matches" (e.g., removing "Phone Cases" when you search for "iPhone"), ensuring high precision.
+* **Zero-Hallucination:** The AI is strictly grounded; it can only recommend products that have been verified by the scraper.
+* **Trust Interface:** A clean **React Material UI** that separates the AI's advice (chat bubbles) from the factual product data (interactive cards).
 
-* Hybrid Recommendation Engine: The AI synthesizes user conversations, image inputs, and browsing history to provide highly relevant, context-aware product suggestions.
-
-* Interactive Chat Interface: A clean, modern chat UI for seamless interaction with the AI copilot.
-
-* Full E-commerce UI: A complete, responsive storefront built with React to browse products, view details, and manage a cart.
+---
 
 ### The AI Engine Explained:
-Our copilot is powered by advanced deep learning models, primarily leveraging the Google Gemini API. The AI operates on two parallel streams:
+Our architecture moves beyond simple "Generative AI" to a robust **Neuro-Symbolic** approach:
 
-+ Natural Language Processing (NLP): At its core, a powerful transformer-based model interprets complex, conversational text. It understands nuances, context, and intent, allowing for a natural dialogue between the user and the shopping assistant.
+1.  **The Eyes (Vision):** Powered by **BLIP (Bootstrapping Language-Image Pre-training)**. It converts user-uploaded images into rich textual descriptions (e.g., *"Red silk saree with gold border"*).
+2.  **The Brain (Logic):** Powered by **Cohere Command R+**. It acts as the reasoning engine, rewriting vague user intents into precise, search-optimized queries.
+3.  **The Hands (Retrieval):** Powered by **ScraperAPI & BeautifulSoup**. It executes parallel, real-time searches across multiple e-commerce platforms to fetch raw inventory data.
+4.  **The Filter (Precision):** Powered by a fine-tuned **DistilBERT Cross-Encoder**. It scores every scraped product against the user's query, rejecting "hard negatives" to ensure top-tier relevance.
 
-+ Computer Vision (CV): The system employs a sophisticated vision model to analyze user-uploaded images. It extracts key features like color, pattern, shape, and style to find visually analogous products, effectively bridging the gap between inspiration and purchase.
-
-These two streams are fed into a hybrid recommendation engine that synthesizes the information to generate a curated list of products, delivering a uniquely intelligent and fluid shopping journey.
+---
 
 ### Technology & Architecture (Planned):
-This project is built on a modern, serverless, and scalable tech stack.
 
-* Frontend: React & Tailwind CSS
 
-* Backend: Firebase Functions (Node.js)
+This project is built on a high-performance, microservices-style architecture:
 
-* Database: Firebase Firestore (NoSQL)
+| Component | Technology Used |
+| :--- | :--- |
+| **Frontend** | React.js, Material UI, Axios |
+| **Backend** | Python FastAPI, Uvicorn |
+| **AI Models** | PyTorch, Transformers (HuggingFace), Sentence-Transformers |
+| **LLM Service** | Cohere API (Command R+) |
+| **Data Pipeline** | ScraperAPI, BeautifulSoup4 |
+| **Database** | SQLite (User Sessions), Vector Store (Context Memory) |
+| **Version Control** | Git & GitHub |
 
-* AI Engine: Google Gemini API
+---
 
-* Deployment: Vercel (Frontend) & Firebase Hosting (Backend)
 
-* Version Control: Git & GitHub
+### Frontend Setup
 
-### Project Roadmap:
+cd ../frontend
+
+ Install Node modules
+
+ 
+npm install
+
+ Start the React App
+
+ 
+npm start
+
+
+### Project Workflow:
 This project will be developed in distinct phases to ensure a structured and agile workflow.
 
-1. Phase 1: Foundation & Setup
+1. Ingestion: User uploads an image or text.
 
 
-2. Phase 2: Frontend UI & Database
+2. Expansion: AI rewrites the query for better searchability.
 
 
-3. Phase 3: AI Backend Development
+3. Retrieval: Scraper fetches raw HTML from Amazon/Flipkart.
 
 
-4. Phase 4: Integration & Deployment
+4. Parsing: Unstructured HTML is converted to Structured JSON.
+
+
+5. Re-Ranking: DistilBERT scores products; low scores are discarded.
+
+
+6. Generation: Cohere synthesizes the final response using valid products.
 
 
 
