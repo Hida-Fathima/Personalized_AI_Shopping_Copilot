@@ -1,0 +1,228 @@
+import json
+import random
+import torch
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
+from transformers import DistilBertTokenizer, DistilBertModel
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
+import matplotlib.pyplot as plt
+import seaborn as sns
+import joblib
+import re
+from tqdm import tqdm
+
+# ===========================================================
+# 1. HEURISTIC GENERATION (Balanced 70/30 Negatives)
+# ===========================================================
+print("Generating dataset using Balanced Anchored Queries...")
+with open("products_meta.json", "r", encoding="utf-8") as f:
+    raw_data = json.load(f)
+
+dataset_pairs = []
+valid_items = []
+
+for item in raw_data:
+    if item.get("title") and item.get("description"):
+        valid_items.append(item)
+
+titles = [item["title"] for item in valid_items]
+
+for item in valid_items:
+    title = item["title"]
+    desc = item["description"]
+    
+    clean_title = re.sub(r'[^\w\s]', '', title).lower().split()
+    clean_desc = re.sub(r'[^\w\s]', '', desc).lower().split()
+    
+    if len(clean_title) < 2 or len(clean_desc) < 3: 
+        continue
+        
+    t_words = clean_title[:random.randint(1, 2)]
+    d_start = random.randint(0, len(clean_desc) - 3)
+    d_words = clean_desc[d_start : d_start + random.randint(1, 2)]
+    
+    query = " ".join(t_words + d_words)
+    
+    # 1. POSITIVE PAIR (Label 1)
+    dataset_pairs.append([query, title, 1.0])
+    
+    # 2. NEGATIVE PAIR (Label 0) - The 70/30 Split
+    if random.random() < 0.30 and len(t_words) > 0: 
+        # 30% Chance: HARD Negative (Shares a word)
+        shared_word = t_words[0]
+        potential_negs = [t for t in titles if shared_word in t.lower() and t != title]
+        if potential_negs:
+            hard_negative = random.choice(potential_negs)
+        else:
+            hard_negative = random.choice(titles)
+    else:
+        # 70% Chance: EASY Negative (Random)
+        hard_negative = random.choice(titles)
+        while hard_negative == title:
+            hard_negative = random.choice(titles)
+                
+    dataset_pairs.append([query, hard_negative, 0.0])
+
+print(f"Total pairs generated: {len(dataset_pairs)}")
+# ===========================================================
+# 2. STRICT TRAIN/TEST SPLIT (80/20)
+# ===========================================================
+train_data, test_data = train_test_split(dataset_pairs, test_size=0.20, random_state=42)
+
+# ===========================================================
+# 3. DATALOADER & MODEL SETUP
+# ===========================================================
+tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
+
+class RerankerDataset(Dataset):
+    def __init__(self, data):
+        self.data = data
+    def __len__(self):
+        return len(self.data)
+    def __getitem__(self, idx):
+        return self.data[idx][0], self.data[idx][1], torch.tensor(self.data[idx][2], dtype=torch.float32)
+
+def collate(batch):
+    queries = [item[0] for item in batch]
+    titles = [item[1] for item in batch]
+    labels = torch.stack([item[2] for item in batch])
+    enc = tokenizer(queries, titles, padding=True, truncation=True, return_tensors="pt")
+    return enc, labels
+
+train_loader = DataLoader(RerankerDataset(train_data), batch_size=16, shuffle=True, collate_fn=collate)
+test_loader = DataLoader(RerankerDataset(test_data), batch_size=32, shuffle=False, collate_fn=collate)
+
+class CrossEncoder(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.bert = DistilBertModel.from_pretrained("distilbert-base-uncased")
+        self.fc = nn.Linear(768, 1)
+    def forward(self, enc):
+        out = self.bert(**enc).last_hidden_state[:, 0, :]
+        return torch.sigmoid(self.fc(out))
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model = CrossEncoder().to(device)
+criterion = nn.BCELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=2e-5)
+
+# ===========================================================
+# 4. TRAINING LOOP
+# ===========================================================
+print("Training started...")
+for epoch in range(2): 
+    epoch_loss = 0
+    model.train()
+    for enc, labels in tqdm(train_loader):
+        enc = {k: v.to(device) for k, v in enc.items()}
+        labels = labels.to(device)
+        
+        optimizer.zero_grad()
+        scores = model(enc).squeeze()
+        loss = criterion(scores, labels)
+        loss.backward()
+        optimizer.step()
+        
+        epoch_loss += loss.item()
+    print(f"Epoch {epoch+1} Average Loss: {epoch_loss/len(train_loader):.4f}")
+
+# ===========================================================
+# 5. METRICS COLLECTION & PLOTTING
+# ===========================================================
+train_losses, train_accs, train_true, train_scores = [], [], [], []
+test_losses, test_accs, test_true, test_scores = [], [], [], []
+y_pred = []
+
+print("\nCollecting metrics...")
+model.eval()
+
+# Train Metrics
+with torch.no_grad():
+    for enc, labels in tqdm(train_loader, desc="Train Set"):
+        enc = {k: v.to(device) for k, v in enc.items()}
+        labels = labels.to(device)
+        scores = model(enc).squeeze()
+        preds = (scores > 0.5).float()
+        
+        train_losses.append(criterion(scores, labels).item())
+        train_accs.append((preds == labels).float().mean().item())
+        train_true.extend(labels.cpu().numpy())
+        train_scores.extend(scores.cpu().numpy())
+
+fpr_train, tpr_train, _ = roc_curve(train_true, train_scores)
+auc_train = auc(fpr_train, tpr_train)
+
+# Test Metrics
+with torch.no_grad():
+    for enc, labels in tqdm(test_loader, desc="Test Set"):
+        enc = {k: v.to(device) for k, v in enc.items()}
+        labels = labels.to(device)
+        scores = model(enc).squeeze()
+        preds = (scores > 0.5).float()
+        
+        test_losses.append(criterion(scores, labels).item())
+        test_accs.append((preds == labels).float().mean().item())
+        test_true.extend(labels.cpu().numpy())
+        test_scores.extend(scores.cpu().numpy())
+        y_pred.extend(preds.cpu().int().tolist())
+
+fpr_test, tpr_test, _ = roc_curve(test_true, test_scores)
+auc_test = auc(fpr_test, tpr_test)
+
+print("\n===== CLASSIFICATION REPORT =====")
+print(classification_report(test_true, y_pred))
+
+# ===== INDIVIDUAL PLOTS =====
+
+plt.figure(figsize=(6,4))
+plt.plot(train_losses)
+plt.title("Training Loss Curve")
+plt.xlabel("Batch")
+plt.ylabel("Loss")
+plt.show()
+
+plt.figure(figsize=(6,4))
+plt.plot(train_accs)
+plt.title("Training Accuracy Curve")
+plt.xlabel("Batch")
+plt.ylabel("Accuracy")
+plt.show()
+
+plt.figure(figsize=(6,4))
+plt.plot(fpr_train, tpr_train, label=f"AUC = {auc_train:.3f}")
+plt.title("Training ROC Curve")
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.legend()
+plt.show()
+
+plt.figure(figsize=(6,4))
+plt.plot(test_losses)
+plt.title("Test Loss Curve")
+plt.xlabel("Batch")
+plt.ylabel("Loss")
+plt.show()
+
+plt.figure(figsize=(6,4))
+plt.plot(test_accs)
+plt.title("Test Accuracy Curve")
+plt.xlabel("Batch")
+plt.ylabel("Accuracy")
+plt.show()
+
+plt.figure(figsize=(6,4))
+plt.plot(fpr_test, tpr_test, label=f"AUC = {auc_test:.3f}")
+plt.plot([0, 1], [0, 1], color='navy', linestyle='--')
+plt.title("Test ROC Curve")
+plt.xlabel("FPR")
+plt.ylabel("TPR")
+plt.legend()
+plt.show()
+
+plt.figure(figsize=(5,4))
+sns.heatmap(confusion_matrix(test_true, y_pred), annot=True, fmt='d', cmap='Blues')
+plt.title("Confusion Matrix Heatmap (Test)")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
