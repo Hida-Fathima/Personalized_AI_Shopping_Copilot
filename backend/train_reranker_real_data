@@ -48,7 +48,7 @@ for item in valid_items:
     dataset_pairs.append([query, title, 1.0])
     
     # 2. NEGATIVE PAIR (Label 0) - The 70/30 Split
-    if random.random() < 0.30 and len(t_words) > 0: 
+    if random.random() < 0.15 and len(t_words) > 0: 
         # 30% Chance: HARD Negative (Shares a word)
         shared_word = t_words[0]
         potential_negs = [t for t in titles if shared_word in t.lower() and t != title]
